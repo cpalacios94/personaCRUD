@@ -4,6 +4,7 @@ import { Colors } from '@/constants/Colors'
 import { useColorScheme } from '@/hooks/useColorScheme'
 import { AsyncStorageService } from '@/services/storage/AsyncStorageService'
 import { Person } from '@/services/storage/types'
+import { ImageZoom } from '@likashefqet/react-native-image-zoom'
 import { useFocusEffect } from '@react-navigation/native'
 import * as ImagePicker from 'expo-image-picker'
 import { useCallback, useState } from 'react'
@@ -32,6 +33,8 @@ export default function PersonasScreen() {
   const [photoUri, setPhotoUri] = useState('')
   const colorScheme = useColorScheme()
   const insets = useSafeAreaInsets()
+  const [zoomModalVisible, setZoomModalVisible] = useState(false)
+  const [currentZoomImage, setCurrentZoomImage] = useState('')
 
   const loadPersonas = async () => {
     const allPersonas = await AsyncStorageService.getAll()
@@ -152,7 +155,16 @@ export default function PersonasScreen() {
   }
 
   const renderItem = ({ item }: { item: Person }) => (
-    <TouchableOpacity style={styles.personItem}>
+    <TouchableOpacity
+      style={styles.personItem}
+      onPress={() => {
+        setCurrentZoomImage(
+          item.photoUri ||
+            Image.resolveAssetSource(require('../assets/images/user.png')).uri
+        )
+        setZoomModalVisible(true)
+      }}
+    >
       {item.photoUri ? (
         <Image source={{ uri: item.photoUri }} style={styles.photo} />
       ) : (
@@ -250,6 +262,34 @@ export default function PersonasScreen() {
           </ThemedView>
         </View>
       </Modal>
+
+      <Modal
+        visible={zoomModalVisible}
+        transparent={true}
+        onRequestClose={() => setZoomModalVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'black' }}>
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              top: insets.top + 10,
+              left: 20,
+              zIndex: 100
+            }}
+            onPress={() => setZoomModalVisible(false)}
+          >
+            <Text style={{ color: 'white', fontSize: 18 }}>Cerrar</Text>
+          </TouchableOpacity>
+          {currentZoomImage ? (
+            <ImageZoom
+              uri={currentZoomImage}
+              style={{ flex: 1 }}
+              maxScale={3}
+              minScale={0.5}
+            />
+          ) : null}
+        </View>
+      </Modal>
     </ThemedView>
   )
 }
@@ -313,7 +353,6 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     marginRight: 15,
-    //backgroundImage: require('../../assets/images/default_user.png')
     backgroundColor: '#ccc'
   },
   personInfo: {
